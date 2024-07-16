@@ -1,72 +1,40 @@
-# 提交流水线执行
-kind: Pipeline
-# 流水线执行名称，需要全局唯一。推荐使用commitID与时间戳构造唯一的名称
-name: "p-<% .git.shortCommitId %>-<% .currentTimestampMs %>"
-# 一些任意的描述信息
-description: 'demo pipeline'
-spec:
-  context:
-    data:
-      ## 全局钉钉通知配置，覆盖模板中的配置
-      #dingdingNotification:
-      #  # 设置全局关闭钉钉通知，下面可以按需打开
-      #  enable: false
-      #  # 设置在任务执行成功时跳过通知
-      #  skipOnSuccess: false
-      #  # 钉钉通知webhook配置
-      #  webhook: https://oapi.dingtalk.com/robot/send?access_token=xxx
-      #  # 钉钉通知的签名密钥
-      #  secret: xxx
-      #  # 钉钉通知的内容。不要统一配置text，除非目的是统一通知的内容
-      #  message:
-      #    at:
-      #      isAtAll: false
-      #      atUserIds: ["admin"]
-      #      atMobiles: ["188xxxx8888"]
-      #    msgtype: text
-      #    # text支持模板语法，模板可以获取到当前执行的状态以及异常信息
-      #    text: |
-      #      task finished.
-      #      TaskName: {{ .currentTask.name }}
-      #      Success: {{ .success }}
-      #      Status: {{ .currentTask.status.phase }}
-      # 通过s工具部署，指定s.yaml文件位置，触发时会自动填入
-      # deployFile: s.yaml
-      # 应用中心所在的应用名称，触发时会自动填入
-      appName: <% .appName %>
-      # 仓库中s.yaml文件的位置。这里是指在根路径中的s.yaml文件
-      deployFile: s.yaml
-  # 本次执行使用的流水线模板描述。现在应用中心支持在流水线中内置模板描述
-  templateSpec:
-    tasks:
-    - name: pre-check
-      context:
-        data:
-          displayName: "前置检查"
-          enable: true
-          steps:
-            - plugin: "@serverless-cd/checkout"
-            - plguin: "@serverless-cd/s-setup"
-            - run: s plan -t "${{ ctx.data.deployFile }}"
-      taskTemplate: serverless-runner-task
-      runAfters: []
-    - name: pre-check-approval
-      context:
-        data:
-          displayName: "人工审核"
-          enable: true
-      taskTemplate: need-approval
-      runAfters:
-      - name: pre-check
-    - name: build-and-deploy
-      context:
-        data:
-          displayName: "构建部署"
-          enable: true
-          steps:
-            - plugin: "@serverless-cd/checkout"
-            - plugin: "@serverless-cd/s-setup"
-            - run: s deploy -t "${{ ctx.data.deployFile }}" --use-local --assume-yes --skip-push
-      taskTemplate: serverless-runner-task
-      runAfters: 
-      - name: pre-check-approval
+edition: 3.0.0
+name: fastapi-app
+access: '{{ access }}'
+vars: 
+  region: '{{ region }}'
+resources:
+  framework: 
+    component: fc3
+    actions: 
+      pre-deploy: 
+        - run: >-
+            export PATH=/usr/local/envs/py310/bin:$PATH && pip3 install -r
+            requirements.txt -t .
+          path: ./code
+    props: 
+      region: ${vars.region} 
+      description: Serverless Devs Web Framework Function
+      runtime: custom.debian10
+      timeout: 60
+      environmentVariables:
+        PATH: >-
+          /var/fc/lang/python3.10/bin:/usr/local/bin/apache-maven/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ruby/bin:/opt/bin:/code:/code/bin
+      customRuntimeConfig:
+        command:
+          - python3
+        args:
+          - '-u'
+          - index.py
+      functionName: '{{ functionName }}'
+      code: ./code
+  fc3_domain_0:
+    component: fc3-domain
+    props:
+      region: ${vars.region}
+      domainName: auto
+      protocol: HTTP
+      routeConfig:
+        routes:
+          - path: /*
+            functionName: ${resources.framework.props.functionName}
