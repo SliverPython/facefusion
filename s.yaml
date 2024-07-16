@@ -1,4 +1,3 @@
----
 # 提交流水线执行
 kind: Pipeline
 # 流水线执行名称，需要全局唯一。推荐使用commitID与时间戳构造唯一的名称
@@ -71,5 +70,3 @@ spec:
       taskTemplate: serverless-runner-task
       runAfters: 
       - name: pre-check-approval
-        
----
