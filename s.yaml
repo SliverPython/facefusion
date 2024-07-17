@@ -1,40 +1,30 @@
-edition: 3.0.0
-name: fastapi-app
-access: '{{ access }}'
-vars: 
-  region: '{{ region }}'
-resources:
-  framework: 
-    component: fc3
-    actions: 
-      pre-deploy: 
-        - run: >-
-            export PATH=/usr/local/envs/py310/bin:$PATH && pip3 install -r
-            requirements.txt -t .
-          path: ./code
-    props: 
-      region: ${vars.region} 
-      description: Serverless Devs Web Framework Function
-      runtime: custom.debian10
-      timeout: 60
-      environmentVariables:
-        PATH: >-
-          /var/fc/lang/python3.10/bin:/usr/local/bin/apache-maven/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ruby/bin:/opt/bin:/code:/code/bin
-      customRuntimeConfig:
-        command:
-          - python3
-        args:
-          - '-u'
-          - index.py
-      functionName: '{{ functionName }}'
-      code: ./code
-  fc3_domain_0:
-    component: fc3-domain
+edition: 1.0.0
+name: face-fusion-app
+access: "default"
+
+services:
+  face-fusion-service:
+    component: fc
     props:
-      region: ${vars.region}
-      domainName: auto
-      protocol: HTTP
-      routeConfig:
-        routes:
-          - path: /*
-            functionName: ${resources.framework.props.functionName}
+      region: cn-shanghai # 选择您的区域
+      service:
+        name: face-fusion-service
+        description: "Face Fusion Service using GPU"
+      function:
+        name: face-fusion-function
+        description: "Function for Face Fusion"
+        runtime: python3
+        handler: index.handler
+        memorySize: 4096 # 设置足够的内存
+        timeout: 300 # 设置合适的超时时间
+        gpuMemorySize: 1 # 设置 GPU 内存大小（单位：GB）
+        codeUri: ./code # 代码所在路径
+        environmentVariables:
+          ENV_VAR: value # 您的环境变量
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - POST
