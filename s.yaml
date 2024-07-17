@@ -1,30 +1,37 @@
 edition: 1.0.0
-name: face-fusion-app
-access: "default"
-
+name: container-demo
+access: default
+vars:
+  region: cn-shenzhen
 services:
-  face-fusion-service:
-    component: fc
+  customContainer-demo:
+    component: devsapp/fc
     props:
-      region: cn-shanghai # 选择您的区域
+      region: ${vars.region}
       service:
-        name: face-fusion-service
-        description: "Face Fusion Service using GPU"
+        name: tgpu_tf_service
+        internetAccess: true
       function:
-        name: face-fusion-function
-        description: "Function for Face Fusion"
-        runtime: python3
-        handler: index.handler
-        memorySize: 4096 # 设置足够的内存
-        timeout: 300 # 设置合适的超时时间
-        gpuMemorySize: 8192 # 设置 GPU 内存大小（单位：GB）
-        codeUri: ./ # 代码所在路径
-        environmentVariables:
-          ENV_VAR: value # 您的环境变量
+        name: tgpu_tf_func
+        description: test gpu for tensorflow
+        handler: not-used
+        timeout: 600
+        caPort: 3000
+        instanceType: fc.gpu.tesla.1
+        gpuMemorySize: 8192
+        cpu: 4
+        memorySize: 16384
+        diskSize: 512
+        runtime: custom-container
+        customContainerConfig:
+          # 1. 请检查阿里云ACR容器镜像仓库已提前创建相应的命名空间（namespace:demo）与仓库（repo:gpu-tf-style-transfer_s）。
+          # 2. 后续更新函数时，请修改此处的tag，由v0.1修改为v0.2后，重新执行s build && s deploy。
+          image: registry.cn-shenzhen.aliyuncs.com/demo/gpu-tf-style-transfer_s:v0.1
+        codeUri: ./
       triggers:
         - name: httpTrigger
           type: http
           config:
             authType: anonymous
             methods:
-              - POST
+              - GET
