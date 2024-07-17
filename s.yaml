@@ -17,7 +17,7 @@ services:
         handler: index.handler
         memorySize: 4096 # 设置足够的内存
         timeout: 300 # 设置合适的超时时间
-        gpuMemorySize: 1 # 设置 GPU 内存大小（单位：GB）
+        gpuMemorySize: 8192 # 设置 GPU 内存大小（单位：GB）
         codeUri: ./ # 代码所在路径
         environmentVariables:
           ENV_VAR: value # 您的环境变量
